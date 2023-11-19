@@ -145,29 +145,6 @@ class AveragingCount:
         """Retrieve the number of measurements giving value read from register"""
         conv_dict = {0: 1, 1: 4, 2: 16, 3: 64, 4: 128, 5: 256, 6: 512, 7: 1024}
         return conv_dict[avg_count]
-
-# class RWBlock:
-#     """
-#     :param int register_address: The register address to read the bit from
-#     :param int register_width: The number of bytes in the register. Defaults to 2.
-#     :param bool signed: Handling negative values.
-#     """
-#     def __init__(self, register_address: int, register_width: int, signed: bool = False) -> None:
-#         self.mask = (1<<8*register_width)-1
-#         self.register_address = register_address
-#         self.register_width = register_width
-#         self.signed = signed
-
-#     def __get__(self, obj, objtype) -> int:
-#         read_data = obj.i2c.read_i2c_block_data(obj.address, self.register_address, self.register_width)
-#         val = 0
-#         for i, data in enumerate(read_data):
-#             val += data << (self.register_width-1-i)*8
-#         if not self.signed:
-#             return val
-#         if read_data[0] & 0x80: # true : negative
-#             val = -( (~val&self.mask) + 1 )
-#         return val
     
 class RWBits:
     """
@@ -298,9 +275,7 @@ class INA228_SMBus:
     vbus = ROBits(20, _REG_VBUS, 4, 3, False)
     """Bus voltage output. Two's complement value, however always positive.
     Conversion factor: 195.3125 µV/LSB"""
-    #_raw_voltage = ROBits(20, _REG_VBUS, 4, 3, False)
-    #_raw_temperature = ROBits(16, _REG_DIETEMP, 0, 2, True)
-    #_raw_current = ROBits(20, _REG_CURRENT, 4, 3, True)
+    
     
     dietemp = ROBits(16, _REG_DIETEMP, 0, 2, True)
     """Internal die temperature measurement. Two's complement value.
@@ -388,6 +363,8 @@ class INA228_SMBus:
 
     def setShunt(self, Rshunt: float, Maximum_expected_current: float):
         """
+        set the shunt_cal and current_LSB
+
         :param float Rshunt: shunt resistor [Ω].
         :param float Maximum_expected_current: Max current [A]
         """
@@ -399,19 +376,3 @@ class INA228_SMBus:
             shunt_cal_val *= 4
         # print(shunt_cal_val)
         self.shunt_cal = int(shunt_cal_val)
-        
-if __name__=="__main__":
-
-    import time
-    #i2c = SMBus(1)
-    ina = INA228(1, 0x40)
-    ina.setShunt(0.002, 70)
-    print(hex(ina.mode))
-    #ina.mode = Mode.TRIGGERED
-    print(ina.temperature_degc)
-    ina.averaging_count = AveragingCount.COUNT_16
-    print(ina.averaging_count)
-
-    for i in range(10):
-        print(ina.current_A)
-        time.sleep(1)
